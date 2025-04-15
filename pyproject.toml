@@ -1,0 +1,15 @@
+[project]
+name = "phy241-project"
+version = "0.1.0"
+description = "Project 3 - Kaon Experiment - PHY241 - UZH"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=2.0.2",
+    "scipy>=1.13.1",
+]
+
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "mypy>=1.15.0",
+]
