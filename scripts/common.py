@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import argparse
 import os
 import json
 import base64
+import argparse
 import numpy as np
-from typing import Any, Union
+
+from functools import cached_property
+from typing import Any, Union, TypeVar, Optional
 from numpy.typing import NDArray
 from dataclasses import dataclass
 
@@ -74,9 +76,16 @@ class Cache:
         with open(filepath, "w") as f:
             json.dump(self.data, f, indent=2)
 
+    # I wish PEP 638 is a thing. So much boilerplate.
     @property
     def average_decay_length(self) -> float:
-        return self.data.get("average_decay_length", 4188)
+        return print_if_None_and_return(
+            self.data.get(
+                "average_decay_length",
+            ),
+            "No value for `average_decay_length` was retrieved",
+            560,
+        )
 
     @average_decay_length.setter
     def average_decay_length(self, value: float):
@@ -84,7 +93,11 @@ class Cache:
 
     @property
     def not_angled_sample(self) -> NDArray:
-        return np.array(self.data.get("not_angled_sample"))
+        return np.array(
+            print_if_None_and_return(
+                self.data.get("not_angled_sample"), "No value for `not_angled_sample` was retrieved", [[[]]]
+            )
+        )
 
     @not_angled_sample.setter
     def not_angled_sample(self, value: NDArray):
@@ -92,7 +105,13 @@ class Cache:
 
     @property
     def not_angled_ideal_z(self) -> float:
-        return self.data.get("not_angled_ideal_z")
+        return print_if_None_and_return(
+            self.data.get(
+                "not_angled_ideal_z",
+            ),
+            "No value for `not_angled_ideal_z` was retrieved",
+            440,
+        )
 
     @not_angled_ideal_z.setter
     def not_angled_ideal_z(self, value: float):
@@ -100,7 +119,11 @@ class Cache:
 
     @property
     def angled_sample(self) -> NDArray:
-        return np.array(self.data.get("angled_sample"))
+        return np.array(
+            print_if_None_and_return(
+                self.data.get("angled_sample"), "No value for `angled_sample` was retrieved", [[[]]]
+            )
+        )
 
     @angled_sample.setter
     def angled_sample(self, value: NDArray):
@@ -108,11 +131,27 @@ class Cache:
 
     @property
     def angled_ideal_z(self) -> float:
-        return self.data.get("angled_ideal_z")
+        return print_if_None_and_return(
+            self.data.get(
+                "angled_ideal_z",
+            ),
+            "No value for `angled_ideal_z` was retrieved",
+            400,
+        )
 
     @angled_ideal_z.setter
     def angled_ideal_z(self, value: float):
         self.data["angled_ideal_z"] = value
+
+
+T = TypeVar("T")
+
+
+def print_if_None_and_return(val: Optional[T], warning: str, default: T) -> T:
+    if val is None:
+        print(warning)
+        return default
+    return val
 
 
 def vc_is_dict(a: Any) -> dict:

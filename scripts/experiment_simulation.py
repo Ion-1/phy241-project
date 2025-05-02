@@ -52,6 +52,17 @@ def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> ND
     return np.stack((vertex_positions, boosted_pos_p_4m[:, 1:], boosted_neu_p_4m[:, 1:]), axis=1)
 
 
+def rotate_sample(sample: NDArray, rng: Generator) -> NDArray:
+    """
+    Takes a (n, 3, 3) NDArray sample of Kaon decay, and rotates the decay vertex and momentum
+    vectors according to a multivariate Gaussian profile.
+    Due to rotational symmetry, we can simply reuse our non-angled sample.
+    """
+    # Use this method @Oliver
+    rng.multivariate_normal
+    pass
+
+
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
         cache = Cache.from_b64(args.cache)
@@ -60,6 +71,8 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     rng = np.random.default_rng(args.seed)
     sample = generate_sample_kaon_decay(cache.average_decay_length, 100000, rng)
     cache.not_angled_sample = sample
+    angled_sample = rotate_sample(sample, rng)
+    cache.angled_sample = angled_sample
     if args.no_write:
         return 0, cache
     else:

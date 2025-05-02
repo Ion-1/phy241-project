@@ -53,12 +53,18 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
         cache = Cache.from_b64(args.cache)
     else:
         cache = Cache(args.cache_file)
-    optimal_z = maximize(
+    optimal_not_angled_z = maximize(
         calculate_num_intersects,
         (1, cache.average_decay_length, 2 * cache.average_decay_length),
         cache.not_angled_sample,
     )
-    cache.not_angled_ideal_z = optimal_z
+    cache.not_angled_ideal_z = optimal_not_angled_z
+    optimal_angled_z = maximize(
+        calculate_num_intersects,
+        (1, cache.average_decay_length, 2 * cache.average_decay_length),
+        cache.angled_sample,
+    )
+    cache.angled_ideal_z = optimal_angled_z
     if args.no_write:
         return 0, cache
     else:
