@@ -34,4 +34,5 @@ the location of the files, passed in as arguments to the script. You can run the
 `-h` or `--help` to see the commandline options, and thus the files that need to be specified.
 
 ## Cat Placeholder
+`cat.png` is generously acting as a placeholder under `./graphs`. Source:
 https://github.com/Laosing/cute-cat-avatars
