@@ -33,7 +33,10 @@ def task():
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
-        cache = Cache.from_b64(args.cache)
+        if isinstance(args.cache, Cache):
+            cache = args.cache
+        else:
+            cache = Cache.from_b64(args.cache)
     else:
         cache = Cache(args.cache_file)
     decay_length = task()["x"]
@@ -68,7 +71,6 @@ if __name__ == "__main__":
         action="store_true",
         help="Do not write out the updated value cache. Additionally, main will return the updated value cache instead.",
     )
-    parser.add_argument("--seed", type=int, help="Seed for the default_rng", default=None)
 
     args = parser.parse_args()
     if hasattr(args, "cache") and args.cache is not None:

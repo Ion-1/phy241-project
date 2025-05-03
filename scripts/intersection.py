@@ -50,7 +50,10 @@ def maximize(fun, bracket, *args) -> float:
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
-        cache = Cache.from_b64(args.cache)
+        if isinstance(args.cache, Cache):
+            cache = args.cache
+        else:
+            cache = Cache.from_b64(args.cache)
     else:
         cache = Cache(args.cache_file)
     optimal_not_angled_z = maximize(

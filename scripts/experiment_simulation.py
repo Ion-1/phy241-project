@@ -1,11 +1,14 @@
 import sys
-import numpy as np
 import argparse
+import numpy as np
 import scipy.stats as st
+
 from numpy.random import Generator
-from common import EnvDefault, Cache, CONSTANTS as C
-from numpy.typing import NDArray
+from common import EnvDefault, Cache, CONSTANTS as C, load_seedsequence
+
 from typing import Union
+from numpy.typing import NDArray
+
 
 
 def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> NDArray:
@@ -60,15 +63,18 @@ def rotate_sample(sample: NDArray, rng: Generator) -> NDArray:
     """
     # Use this method @Oliver
     rng.multivariate_normal
-    pass
+    return sample
 
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
-        cache = Cache.from_b64(args.cache)
+        if isinstance(args.cache, Cache):
+            cache = args.cache
+        else:
+            cache = Cache.from_b64(args.cache)
     else:
         cache = Cache(args.cache_file)
-    rng = np.random.default_rng(args.seed)
+    rng = np.random.default_rng(load_seedsequence(args.seed, args.seed_file, args.write_out_seed)[0])
     sample = generate_sample_kaon_decay(cache.average_decay_length, 100000, rng)
     cache.not_angled_sample = sample
     angled_sample = rotate_sample(sample, rng)
@@ -103,7 +109,21 @@ if __name__ == "__main__":
         action="store_true",
         help="Do not write out the updated value cache. Additionally, main will return the updated value cache instead.",
     )
-    parser.add_argument("--seed", type=int, help="Seed for the default_rng", default=None)
+    parser.add_argument(
+        "--seed",
+        help="Seed for the default_rng. To see what is accepted, check `load_seedsequence` in `common.py`",
+        default=None,
+    )
+    parser.add_argument(
+        "--seed-file",
+        help="File at which seed should be stored. Check `load_seedsequence` in `common.py` for more.",
+        default=None
+    )
+    parser.add_argument(
+        "--write-out-seed",
+        action="store_false",
+        help="Whether to write out the seed used. See `load_seedsequence` in `common.py`."
+    )
 
     args = parser.parse_args()
     if hasattr(args, "cache") and args.cache is not None:

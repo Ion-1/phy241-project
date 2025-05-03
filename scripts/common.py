@@ -1,15 +1,25 @@
 from __future__ import annotations
 
 import os
+import io
 import json
 import base64
+import pickle
+import logging
 import argparse
+
 import numpy as np
 
-from functools import cached_property
-from typing import Any, Union, TypeVar, Optional
-from numpy.typing import NDArray
 from dataclasses import dataclass
+from numpy.random import SeedSequence
+
+from typing import Any, Union, TypeVar, Optional
+from typing_extensions import Self
+from numpy.typing import NDArray
+
+
+global logger
+logger = logging.getLogger(__name__)
 
 
 # Physical constants
@@ -158,3 +168,86 @@ def vc_is_dict(a: Any) -> dict:
     if not isinstance(a, dict):
         raise EnvironmentError("Bad value cache file_or_json")
     return a
+
+
+def load_seedsequence(
+    seed: Optional[Union[str, SeedSequence]] = None, filename: Optional[str] = None, writeout: bool = True
+) -> tuple[SeedSequence, int]:
+    """
+    Creates a SeedSequence by attempting to convert seed to an `int`, or unpickle an `int`,
+    `tuple[int]`, `list[int]`, `None`, or a `SeedSequence`, where seed is base64 encoded bytes.
+    If seed is a `SeedSequence`, it will spawn a child off it.
+    If not provided, it will try unpickling the file at `filename` in binary mode before using
+    `None` for the initial entropy.
+    It will try to write out the entropy at filename if filename was provided,
+    but `seed` or `None` were used instead (can be disabled with `writeout=False`).
+    Returns a `SeedSequence` and an `int`, indicating whether seed (1), filename (2), or None (3)
+    was used.
+    """
+    if isinstance(seed, np.random.bit_generator.SeedSequence):
+        logger.debug("Spawning SeedSequence from existing")
+        return_data = seed.spawn(1)[0], 1
+    else:
+        return_data = load_seedsequence_(seed, filename)
+    if filename is not None and writeout and return_data[1] != 2:
+        try:
+            with open(filename, "wb") as fp:
+                pickle.dump(return_data[0].entropy, fp, protocol=0)
+                logger.info("Wrote SeedSequence entropy out to file")
+        except Exception:
+            pass
+    return return_data
+
+
+def load_seedsequence_(seed, filename) -> tuple[SeedSequence, int]:
+    # Once upon a time I though exception-based handling wasn't that bad...
+    if seed is not None:
+        try:
+            return_data = SeedSequence(int(seed)), 1
+            logger.debug("Created SeedSequence from `seed` integer")
+            return return_data
+        except Exception:
+            pass
+        try:
+            data = restricted_loads(base64.b64decode(seed))
+            if isinstance(data, SeedSequence):
+                logger.debug("Created SeedSequence from pickled SeedSequence")
+                return data, 1
+            return_data = SeedSequence(data), 1
+            logger.debug("Created SeedSequence from pickled int or sequence[int]")
+            return return_data
+        except Exception:
+            pass
+    if filename is not None:
+        try:
+            with open(filename, "rb") as fp:
+                data = RestrictedUnpickler(fp).load()
+                if isinstance(data, SeedSequence):
+                    logger.debug("Created SeedSequence from pickled SeedSequence from file")
+                    return data, 2
+                return_data = SeedSequence(data), 2
+                logger.debug("Created SeedSequence from pickled int from file")
+                return return_data
+        except Exception:
+            pass
+    logger.debug("Created SeedSequence from None")
+    return SeedSequence(None), 3
+
+
+def b64_seedsequence(data: SeedSequence) -> str:
+    """Returns base64-encoded pickled SeedSequence string."""
+    return base64.b64encode(pickle.dumps(data)).decode()
+
+
+class RestrictedUnpickler(pickle.Unpickler):
+    def find_class(self, module, name):
+        # Only allow SeedSequence.
+        if module == "numpy" and name == "SeedSequence":
+            return getattr(np, name)
+        # Forbid everything else.
+        raise pickle.UnpicklingError("global '%s.%s' is forbidden" % (module, name))
+
+
+def restricted_loads(s):
+    """Helper function analogous to pickle.loads()."""
+    return RestrictedUnpickler(io.BytesIO(s)).load()
