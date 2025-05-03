@@ -1,6 +1,6 @@
 # PHY241 Project 3: Kaon Experiment
 
-#### Group members: @Ion-1, @Cookie265, @Ar6cl, @Alessandro6969
+#### Group members: [@Ion-1](https://github.com/Ion-1) [@Cookie265](https://github.com/Cookie265) [@Ar6cI](https://github.com/Ar6cI) [@Alessandro6969](https://github.com/Alessandro6969)
 
 This is our repository for the group project in module PHY241 at the University of Zürich.
 
