@@ -4,7 +4,7 @@ import numpy as np
 import scipy.stats as st
 
 from numpy.random import Generator
-from common import EnvDefault, Cache, CONSTANTS as C, load_seedsequence
+from common import EnvDefault, Cache, CONSTANTS as C, MAGIC as M, load_seedsequence
 
 from typing import Union
 from numpy.typing import NDArray
@@ -75,7 +75,7 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     else:
         cache = Cache(args.cache_file)
     rng = np.random.default_rng(load_seedsequence(args.seed, args.seed_file, args.write_out_seed)[0])
-    sample = generate_sample_kaon_decay(cache.average_decay_length, 100000, rng)
+    sample = generate_sample_kaon_decay(cache.average_decay_length, M.sample_size, rng)
     cache.not_angled_sample = sample
     angled_sample = rotate_sample(sample, rng)
     cache.angled_sample = angled_sample

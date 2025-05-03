@@ -22,8 +22,13 @@ global logger
 logger = logging.getLogger(__name__)
 
 
+@dataclass(frozen=True)
+class MAGIC:
+    sample_size = 100000
+
+
 # Physical constants
-@dataclass
+@dataclass(frozen=True)
 class CONSTANTS:
     EV_TO_JOULES = 1.602176634e-19
     SPEED_OF_LIGHT = 299792458  # in ms^-1
@@ -31,6 +36,7 @@ class CONSTANTS:
     PION_NEU_MASS = 134.9768  # in MeV/c^2
     KAON_MASS = 493.677  # in MeV/c^2
     KAON_MEANLIFE = 1.2380e-8  # in s
+    PION_DECAY_LENGTH = 4188 # in m
     # Aliases
     c = SPEED_OF_LIGHT
     m_k = KAON_MASS
@@ -41,10 +47,12 @@ class CONSTANTS:
     MeV2mps = 10**6 * EV_TO_JOULES / SPEED_OF_LIGHT
 
 
-@dataclass
+@dataclass(frozen=True)
 class EXPERIMENTAL_CONSTANTS:
     DETECTOR2_RADIUS = 2  # in m
     DETECTOR2_RADIUS_SQUARED = 4
+    PERCENTAGE_PIONS_BEAM = 0.84
+    PERCENTAGE_KAONS_BEAM = 1 - PERCENTAGE_PIONS_BEAM
     # Aliases
     d2radsq = DETECTOR2_RADIUS_SQUARED
 

@@ -1,24 +1,24 @@
 import sys
-import numpy as np
-import scipy
 import argparse
-from functools import partial
-from common import Cache, EnvDefault
+import scipy
+import numpy as np
+
+from common import Cache, EnvDefault, CONSTANTS as C, EXPERIMENTAL_CONSTANTS as E
+
 from typing import Union
-import matplotlib.pyplot as plt
 
 
 def nll(mean_k, data):
     # print("testing at", mean_k)
-    probs = np.clip(distribution(mean_k, data), 1e-10, 1)
-    logs = np.log(probs)
+    probs = distribution(mean_k, data)
+    logs = np.ma.log(probs)
     return -np.sum(logs)
 
 
 def distribution(mean_k, x):
-    mean_pi = 4188
-    amount_pi = 0.84
-    amount_k = 1 - amount_pi
+    mean_pi = C.PION_DECAY_LENGTH
+    amount_pi = E.PERCENTAGE_PIONS_BEAM
+    amount_k = E.PERCENTAGE_KAONS_BEAM
     return amount_k * scipy.stats.expon.pdf(x, loc=0, scale=mean_k) + amount_pi * scipy.stats.expon.pdf(
         x, loc=0, scale=mean_pi
     )
