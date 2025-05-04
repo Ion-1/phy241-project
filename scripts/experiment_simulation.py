@@ -55,7 +55,7 @@ def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> ND
     return np.stack((vertex_positions, boosted_pos_p_4m[:, 1:], boosted_neu_p_4m[:, 1:]), axis=1)
 
 
-def rotate_sample(sample: NDArray, rng: Generator) -> NDArray:
+def rotate_sample(sample: NDArray, n: int, rng: Generator) -> NDArray:
     """
     Takes a (n, 3, 3) NDArray sample of Kaon decay, and rotates the decay vertex and momentum
     vectors according to a multivariate Gaussian profile.
