@@ -77,7 +77,7 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     rng = np.random.default_rng(load_seedsequence(args.seed, args.seed_file, args.write_out_seed)[0])
     sample = generate_sample_kaon_decay(cache.average_decay_length, M.sample_size, rng)
     cache.not_angled_sample = sample
-    angled_sample = rotate_sample(sample, rng)
+    angled_sample = rotate_sample(sample, M.sample_size, rng)
     cache.angled_sample = angled_sample
     if args.no_write:
         return 0, cache
