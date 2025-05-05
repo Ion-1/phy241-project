@@ -24,11 +24,17 @@ def distribution(mean_k, x):
     )
 
 
+def second_derivative(f, x, data, h=1e-3):
+    return (f(x + h, data) - 2 * f(x, data) + f(x - h, data)) / h**2
+
+
 def task():
     data = np.loadtxt(".\data\dec_lengths.txt")
     bracket = (100, 500, 5000)
     best = scipy.optimize.minimize_scalar(nll, bracket=bracket, args=(data,))
-    return best
+    value = second_derivative(nll, best.x, data)
+    uncertainty = np.sqrt(1 / value)
+    return best.x, uncertainty
 
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
@@ -39,6 +45,9 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
             cache = Cache.from_b64(args.cache)
     else:
         cache = Cache(args.cache_file)
+    #decay_length, decay_length_uncertainty = task()
+    #i changed task() to return only x instead of the entire scipy stuff
+    #so this should fix it
     decay_length = task()["x"]
     cache.average_decay_length = decay_length
     if args.no_write:
