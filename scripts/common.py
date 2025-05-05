@@ -37,7 +37,7 @@ class CONSTANTS:
     PION_NEU_MASS = 134.9768  # in MeV/c^2
     KAON_MASS = 493.677  # in MeV/c^2
     KAON_MEANLIFE = 1.2380e-8  # in s
-    PION_DECAY_LENGTH = 4188 # in m
+    PION_DECAY_LENGTH = 4188  # in m
     # Aliases
     c = SPEED_OF_LIGHT
     m_k = KAON_MASS

@@ -1,10 +1,15 @@
 import sys
+import logging
 import argparse
 import numpy as np
 import scipy.optimize as opt
 from common import Cache, EXPERIMENTAL_CONSTANTS as E, EnvDefault
 from typing import Union
 from numpy.typing import NDArray
+
+
+global logger
+logger = logging.getLogger(__name__)
 
 
 def calculate_num_intersects(z: float, a: NDArray) -> int:
@@ -51,10 +56,13 @@ def maximize(fun, bracket, *args) -> float:
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
         if isinstance(args.cache, Cache):
+            logger.debug("Cache provided as-is in namespace")
             cache = args.cache
         else:
+            logger.info("Loading cache from b64 string")
             cache = Cache.from_b64(args.cache)
     else:
+        logger.info("Loading cache from file")
         cache = Cache(args.cache_file)
     optimal_not_angled_z = maximize(
         calculate_num_intersects,
@@ -68,6 +76,9 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
         cache.angled_sample,
     )
     cache.angled_ideal_z = optimal_angled_z
+    logger.info(
+        f"Found the optimal z for straight Kaon beam: {cache.not_angled_ideal_z}; for angled Kaon beam: {cache.angled_ideal_z}"
+    )
     if args.no_write:
         return 0, cache
     else:
@@ -78,7 +89,8 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", action="store_true", help="Increase output verbosity.")
+    parser.add_argument("-q", "--quiet", action="count", help="Decrease output verbosity.", default=0)
+    parser.add_argument("-v", "--verbose", action="count", help="Increase output verbosity.", default=0)
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
         "-c",
@@ -102,6 +114,17 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if hasattr(args, "cache") and args.cache is not None:
         args.no_write = True
+
+    fmt = "[%(levelname)s|%(name)s] %(asctime)s: %(message)s"
+    logging.basicConfig(
+        stream=sys.stdout,
+        level={0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG, -1: logging.ERROR, -2: logging.CRITICAL}.get(
+            min(max(args.verbose - args.quiet, -2), 2), logging.WARNING
+        ),
+        format=fmt,
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+    )
+    logger.info(f"Parsed arguments: {args}")
 
     if args.no_write:
         sys.exit(main(args)[0])

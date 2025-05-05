@@ -1,4 +1,5 @@
 import sys
+import logging
 import argparse
 import numpy as np
 import scipy.stats as st
@@ -9,6 +10,9 @@ from common import EnvDefault, Cache, CONSTANTS as C, MAGIC as M, load_seedseque
 from typing import Union
 from numpy.typing import NDArray
 
+
+global logger
+logger = logging.getLogger(__name__)
 
 
 def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> NDArray:
@@ -69,15 +73,20 @@ def rotate_sample(sample: NDArray, n: int, rng: Generator) -> NDArray:
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
         if isinstance(args.cache, Cache):
+            logger.debug("Cache provided as-is in namespace")
             cache = args.cache
         else:
+            logger.info("Loading cache from b64 string")
             cache = Cache.from_b64(args.cache)
     else:
+        logger.info("Loading cache from file")
         cache = Cache(args.cache_file)
     rng = np.random.default_rng(load_seedsequence(args.seed, args.seed_file, args.write_out_seed)[0])
     sample = generate_sample_kaon_decay(cache.average_decay_length, M.sample_size, rng)
+    logger.info("Finished generating straight-beam sample")
     cache.not_angled_sample = sample
     angled_sample = rotate_sample(sample, M.sample_size, rng)
+    logger.info("Finished rotating straight-beam sample")
     cache.angled_sample = angled_sample
     if args.no_write:
         return 0, cache
@@ -89,7 +98,8 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose", action="store_true", help="Increase output verbosity.")
+    parser.add_argument("-q", "--quiet", action="count", help="Decrease output verbosity.", default=0)
+    parser.add_argument("-v", "--verbose", action="count", help="Increase output verbosity.", default=0)
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
         "-c",
@@ -117,17 +127,28 @@ if __name__ == "__main__":
     parser.add_argument(
         "--seed-file",
         help="File at which seed should be stored. Check `load_seedsequence` in `common.py` for more.",
-        default=None
+        default=None,
     )
     parser.add_argument(
         "--write-out-seed",
         action="store_false",
-        help="Whether to write out the seed used. See `load_seedsequence` in `common.py`."
+        help="Whether to write out the seed used. See `load_seedsequence` in `common.py`.",
     )
 
     args = parser.parse_args()
     if hasattr(args, "cache") and args.cache is not None:
         args.no_write = True
+
+    fmt = "[%(levelname)s|%(name)s] %(asctime)s: %(message)s"
+    logging.basicConfig(
+        stream=sys.stdout,
+        level={0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG, -1: logging.ERROR, -2: logging.CRITICAL}.get(
+            min(max(args.verbose - args.quiet, -2), 2), logging.WARNING
+        ),
+        format=fmt,
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+    )
+    logger.info(f"Parsed arguments: {args}")
 
     if args.no_write:
         sys.exit(main(args)[0])

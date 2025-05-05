@@ -28,17 +28,13 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     ssequence = load_seedsequence(args.seed, args.seed_file, args.no_write_out_seed)[0]
     logger.info("Calculating average decay length...")
     _, cache = find_dec_length.main(Namespace(cache=cache, no_write=True))
-    logger.info(f"Calculated average decay length as {cache.average_decay_length}")
     logger.info("Generating experiment sample")
     _, cache = experiment_simulation.main(
         Namespace(cache=cache, seed=ssequence, no_write=True, seed_file=None, write_out_seed=False)
-    ) # Spawning from ssequence is done by `load_seed_sequence` later
+    )  # Spawning a child from ssequence is done by `load_seed_sequence` within main
     logger.info("Finished generating samples")
     logger.info("Calculating intersections and optimizing z")
     _, cache = intersection.main(Namespace(cache=cache, no_write=True))
-    logger.info(
-        f"Found the optimal z for straight Kaon beam: {cache.not_angled_ideal_z}; for angled Kaon beam: {cache.angled_ideal_z}"
-    )
     if args.no_write:
         return 0, cache
     else:
