@@ -7,6 +7,7 @@ import base64
 import pickle
 import logging
 import argparse
+from json import JSONDecodeError
 
 import numpy as np
 
@@ -74,12 +75,24 @@ class EnvDefault(argparse.Action):
 class Cache:
     def __init__(self, file_or_json: Union[str, bytes]):
         if isinstance(file_or_json, bytes):
-            self.data = vc_is_dict(json.loads(file_or_json))
+            try:
+                self.data = vc_is_dict(json.loads(file_or_json))
+            except JSONDecodeError:
+                logger.error(f"Failed in decoding bytes. Proceeding with empty cache")
+                self.data = {}
         elif isinstance(file_or_json, str):
             if not os.path.exists(file_or_json):
-                raise EnvironmentError("Value cache file does not seem to exist / has too restrictive permissions")
-            with open(file_or_json, "r") as f:
-                self.data = vc_is_dict(json.load(f))
+                logger.warning("Value cache file does not seem to exist. Proceeding with empty cache.")
+                self.data = {}
+            try:
+                with open(file_or_json, "r") as f:
+                    self.data = vc_is_dict(json.load(f))
+            except OSError:
+                logger.error("Failure upon opening value cache file. Proceeding with empty cache.")
+                self.data = {}
+            except JSONDecodeError:
+                logger.error("Failed in decoding value cache file. Proceeding with empty cache.")
+                self.data = {}
         else:
             raise TypeError(f"`file_or_json` has invalid type: {type(file_or_json)}. Expected: str | bytes.")
 
@@ -175,7 +188,7 @@ T = TypeVar("T")
 
 def print_if_None_and_return(val: Optional[T], warning: str, default: T) -> T:
     if val is None:
-        print(warning)
+        logger.warning(warning)
         return default
     return val
 
