@@ -161,6 +161,14 @@ class Cache:
     def angled_ideal_z(self, value: float):
         self.data["angled_ideal_z"] = value
 
+    @property
+    def dlength_uncertainty(self) -> tuple[float, float]:
+        return tuple(self.data["dlength_uncertainty"])
+
+    @dlength_uncertainty.setter
+    def dlength_uncertainty(self, value: tuple[float, float]):
+        self.data["dlength_uncertainty"] = value
+
 
 T = TypeVar("T")
 

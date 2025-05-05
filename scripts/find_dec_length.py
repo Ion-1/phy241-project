@@ -48,8 +48,9 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     #decay_length, decay_length_uncertainty = task()
     #i changed task() to return only x instead of the entire scipy stuff
     #so this should fix it
-    decay_length = task()["x"]
+    decay_length, dl_uncertainty = task()
     cache.average_decay_length = decay_length
+    cache.dlength_uncertainty = dl_uncertainty
     if args.no_write:
         return 0, cache
     else:
