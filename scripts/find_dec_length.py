@@ -2,6 +2,7 @@ import sys
 import argparse
 import scipy
 import numpy as np
+import matplotlib.pyplot as plt
 
 from common import Cache, EnvDefault, CONSTANTS as C, EXPERIMENTAL_CONSTANTS as E
 
@@ -23,19 +24,35 @@ def distribution(mean_k, x):
         x, loc=0, scale=mean_pi
     )
 
-
-def second_derivative(f, x, data, h=1e-3):
-    return (f(x + h, data) - 2 * f(x, data) + f(x - h, data)) / h**2
+def find_interval(nll_function,best_mean_k,nll_min,data,direction):
+    def func_that_should_be_zero(mean_k):
+        return nll_function(mean_k,data)-(nll_min+0.5)
+    lower=(0,best_mean_k)
+    higher=(best_mean_k,best_mean_k*5)
+    bracket = lower if direction=="lower" else higher
+    solution = scipy.optimize.root_scalar(func_that_should_be_zero, bracket=bracket)
+    return solution.root
 
 
 def task():
     data = np.loadtxt(".\data\dec_lengths.txt")
     bracket = (100, 500, 5000)
     best = scipy.optimize.minimize_scalar(nll, bracket=bracket, args=(data,))
-    value = second_derivative(nll, best.x, data)
-    uncertainty = np.sqrt(1 / value)
-    return best.x, uncertainty
+    lower=find_interval(nll,best.x,best.fun,data,direction="lower")
+    higher = find_interval(nll, best.x, best.fun, data, direction="higher")
+    print(best.x,lower,higher)
+    return best.x, [best.x-lower,higher-best.x]
 
+def plot():
+    data = np.loadtxt("./data/dec_lengths.txt")
+    plt.figure()
+    plt.hist(data, bins=100)
+    plt.xlabel("Decay Length [m]")
+    plt.ylabel("Count")
+    plt.title("Histogram of Decay Lengths")
+    plt.grid(True, linestyle="--", alpha=0.5)
+    plt.tight_layout()
+    plt.show()
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
@@ -45,9 +62,6 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
             cache = Cache.from_b64(args.cache)
     else:
         cache = Cache(args.cache_file)
-    #decay_length, decay_length_uncertainty = task()
-    #i changed task() to return only x instead of the entire scipy stuff
-    #so this should fix it
     decay_length, dl_uncertainty = task()
     cache.average_decay_length = decay_length
     cache.dlength_uncertainty = dl_uncertainty
