@@ -1,14 +1,20 @@
 import os
 import sys
+import logging
 import numpy as np
-import scipy.stats as st
 import matplotlib.pyplot as plt
 
+from numpy.typing import NDArray
+
 from find_dec_length import nll, distribution
-from common import Cache
+from common import Cache, MAGIC as M
+
+global logger
+logger = logging.getLogger(__name__)
 
 
 def plot_nll(cache: Cache):
+    logger.info("Plotting NLL")
     data=np.loadtxt("./data/dec_lengths.txt")
 
     fig, (ax1, ax2) = plt.subplots(1, 2, width_ratios=(1,1), figsize=(12.8, 7.2), dpi=150, layout="tight")
@@ -54,13 +60,42 @@ def plot_nll(cache: Cache):
 
     fig.savefig("./graphs/task2_nll.png")
 
+
+def plot3d(a: NDArray, name: str):
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.4, 7.2), dpi=150, subplot_kw={"projection":"3d"})
+    a = a[::M.sample_size//100] # only take 100 element subset of sample
+    ax1.quiver(empty := np.zeros(a.shape[0]), empty, empty, a[:,0,2], a[:,0,0], a[:,0,1])
+    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,1,2], a[:,1,0], a[:,1,1], label="π⁺ momenta")
+    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,2,2], a[:,2,0], a[:,2,1], label="π⁰ momenta")
+    ax1.set_title("Kaon decay vertices in $m$")
+    ax2.set_title("Pion momenta in $ms^{-1}$")
+    ax2.legend()
+    fig.savefig(f"./graphs/task3_sample_{name.replace(' ', '_')}.png")
+
+
+def plot_samples(cache: Cache):
+    logger.info("Plotting not-divergent beam")
+    plot3d(cache.not_angled_sample, "Not divergent beam")
+    logger.info("Plotting divergent beam")
+    plot3d(cache.angled_sample, "Divergent sample")
+
 def main(*args: str) -> int:
     if not os.path.exists("./graphs/cat.png"):
         return 1
     cache = Cache(r"./data/value_cache.json")
     plot_nll(cache)
+    plot_samples(cache)
     return 0
 
 
 if __name__ == "__main__":
+
+    fmt = "[%(levelname)s|%(name)s] %(asctime)s: %(message)s"
+    logging.basicConfig(
+        stream=sys.stdout,
+        level=logging.INFO,
+        format=fmt,
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+    )
+
     sys.exit(main(*sys.argv))
