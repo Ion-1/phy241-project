@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from numpy.typing import NDArray
 
 from find_dec_length import nll, distribution
-from common import Cache, MAGIC as M
+from common import Cache, MAGIC as M, CONSTANTS as C
 
 global logger
 logger = logging.getLogger(__name__)
@@ -64,11 +64,13 @@ def plot_nll(cache: Cache):
 def plot3d(a: NDArray, name: str):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.4, 7.2), dpi=150, subplot_kw={"projection":"3d"})
     a = a[::M.sample_size//100] # only take 100 element subset of sample
+    a[:,1,:] = a[:,1,:] / C.m_pp
+    a[:,2,:] = a[:,2,:] / C.m_np
     ax1.quiver(empty := np.zeros(a.shape[0]), empty, empty, a[:,0,2], a[:,0,0], a[:,0,1])
-    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,1,2], a[:,1,0], a[:,1,1], label="π⁺ momenta")
-    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,2,2], a[:,2,0], a[:,2,1], label="π⁰ momenta")
+    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,1,2], a[:,1,0], a[:,1,1], label="π⁺ velocities")
+    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,2,2], a[:,2,0], a[:,2,1], label="π⁰ velocities")
     ax1.set_title("Kaon decay vertices in $m$")
-    ax2.set_title("Pion momenta in $ms^{-1}$")
+    ax2.set_title("Pion velocities in $ms^{-1}$")
     ax2.legend()
     fig.savefig(f"./graphs/task3_sample_{name.replace(' ', '_')}.png")
 
