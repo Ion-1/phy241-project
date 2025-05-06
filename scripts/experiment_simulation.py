@@ -59,14 +59,14 @@ def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> ND
     return np.stack((vertex_positions, boosted_pos_p_4m[:, 1:], boosted_neu_p_4m[:, 1:]), axis=1)
 
 
-def rotate_sample(sample: NDArray, n: int, rng: Generator, angle_std: float) -> NDArray:
+def rotate_sample(sample: NDArray, angle_std: float, rng: Generator) -> NDArray:
     """
     Takes a (n, 3, 3) NDArray sample of Kaon decay, and rotates the decay vertex and momentum
     vectors according to a Gaussian for the polar angle and a uniform distribution for the azimuthal angle.
     Due to rotational symmetry, we can simply reuse our non-angled sample.
     """
     result=np.empty_like(sample)
-    for i in range(n):
+    for i in range(sample.shape[0]):
         azimuthal = rng.normal(loc=0, scale=angle_std, size=None)
         polar = rng.uniform(low=0, high=2 * np.pi, size=None)
 
@@ -115,7 +115,7 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     sample = generate_sample_kaon_decay(cache.average_decay_length, M.sample_size, rng)
     logger.info("Finished generating straight-beam sample")
     cache.not_angled_sample = sample
-    angled_sample = rotate_sample(sample, M.sample_size, rng, E.ANGULAR_DIVERGENCE_STD)
+    angled_sample = rotate_sample(sample, E.ANGULAR_DIVERGENCE_STD, rng)
     logger.info("Finished rotating straight-beam sample")
     cache.angled_sample = angled_sample
     if args.no_write:
