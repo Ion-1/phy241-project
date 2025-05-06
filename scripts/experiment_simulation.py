@@ -70,7 +70,7 @@ def rotate_sample(sample: NDArray, n: int, rng: Generator) -> NDArray:
         azimuthal = rng.normal(loc=0, scale=0.001, size=None)
         polar = rng.uniform(low=0, high=2 * np.pi, size=None)
 
-        rotation = R(polar, "y") @ R(azimuthal, "z")
+        rotation = R(polar, "z") @ R(azimuthal, "y")
         for j in range(3):
             result[i, j] = sample[i, j] @ rotation.T
 
