@@ -15,9 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 def nll(mean_k, data):
-    # print("testing at", mean_k)
     probs = distribution(mean_k, data)
     logs = np.ma.log(probs)
+    invalids=np.sum(logs.mask)
+    if invalids>0:
+        logger.debug(f"There are {invalids} invalid values.")
     return -np.sum(logs)
 
 
@@ -61,6 +63,15 @@ def plot():
     plt.grid(True, linestyle="--", alpha=0.5)
     plt.tight_layout()
     plt.show()
+
+def plot_nll():
+    data=np.loadtxt("./data/dec_lengths.txt")
+    values=np.linspace(540,580,100)
+    nlls=nll(values,data)
+    plt.figure()
+    plt.plot(values,nlls)
+    plt.show()
+
 
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
