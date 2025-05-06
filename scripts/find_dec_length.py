@@ -50,7 +50,7 @@ def task():
     best = scipy.optimize.minimize_scalar(nll, bracket=bracket, args=(data,))
     lower = find_interval(nll, best.x, best.fun, data, direction="lower")
     higher = find_interval(nll, best.x, best.fun, data, direction="higher")
-    return best.x, [best.x - lower, higher - best.x]
+    return best.x, (best.x - lower, higher - best.x)
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:

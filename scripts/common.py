@@ -133,6 +133,8 @@ class Cache:
     def average_decay_length(self, value: float):
         self.data["average_decay_length"] = value
 
+    adl = average_decay_length
+
     @property
     def not_angled_sample(self) -> NDArray:
         return np.array(
