@@ -52,28 +52,6 @@ def task():
     higher = find_interval(nll, best.x, best.fun, data, direction="higher")
     return best.x, [best.x - lower, higher - best.x]
 
-
-def plot():
-    data = np.loadtxt("./data/dec_lengths.txt")
-    plt.figure()
-    plt.hist(data, bins=100)
-    plt.xlabel("Decay Length [m]")
-    plt.ylabel("Count")
-    plt.title("Histogram of Decay Lengths")
-    plt.grid(True, linestyle="--", alpha=0.5)
-    plt.tight_layout()
-    plt.show()
-
-def plot_nll():
-    data=np.loadtxt("./data/dec_lengths.txt")
-    values=np.linspace(540,580,100)
-    nlls=nll(values,data)
-    plt.figure()
-    plt.plot(values,nlls)
-    plt.show()
-
-
-
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
         if isinstance(args.cache, Cache):
