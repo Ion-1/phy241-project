@@ -62,13 +62,43 @@ def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> ND
 def rotate_sample(sample: NDArray, n: int, rng: Generator) -> NDArray:
     """
     Takes a (n, 3, 3) NDArray sample of Kaon decay, and rotates the decay vertex and momentum
-    vectors according to a multivariate Gaussian profile.
+    vectors according to a Gaussian for the polar angle and a uniform distribution for the azimuthal angle.
     Due to rotational symmetry, we can simply reuse our non-angled sample.
     """
-    # Use this method @Oliver
-    rng.multivariate_normal
-    return sample
+    result=np.empty_like(sample)
+    for i in range(n):
+        azimuthal = rng.normal(loc=0, scale=0.001, size=None)
+        polar = rng.uniform(low=0, high=2 * np.pi, size=None)
 
+        rotation = R(polar, "y") @ R(azimuthal, "z")
+        for j in range(3):
+            result[i, j] = sample[i, j] @ rotation.T
+
+    return result
+
+def R(angle, axis):
+    c = np.cos(angle)
+    s = np.sin(angle)
+
+    if axis == "x":
+        return np.array([
+            [1,  0,  0],
+            [0,  c, -s],
+            [0,  s,  c]
+        ])
+    elif axis == "y":
+        return np.array([
+            [ c, 0, s],
+            [ 0, 1, 0],
+            [-s, 0, c]
+        ])
+    elif axis == "z":
+        return np.array([
+            [c, -s, 0],
+            [s,  c, 0],
+            [0,  0, 1]
+        ])
+    return None
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
