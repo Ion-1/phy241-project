@@ -30,6 +30,7 @@ def calculate_num_intersects(z: float, a: NDArray) -> int:
     # We flatten our momentum vectors into one big array, and repeat z_travel for every mom. vec.
     z_travel = np.repeat(z_travel, a.shape[1] - 1)
     momentum_vecs = a[:, 1:, :].reshape(-1, 3)
+    xy_offsets = np.repeat(a[:, 0, :2], a.shape[1] - 1, axis=0)
 
     with np.errstate(divide="ignore"):
         # We ignore division by 0, as that just means travel perpendicular to our detector, and
@@ -38,14 +39,15 @@ def calculate_num_intersects(z: float, a: NDArray) -> int:
 
     # Filter out the ones going backwards in time
     mask = travel_time > 0
-    travel_time, momentum_vecs = travel_time[mask], momentum_vecs[mask]
+    travel_time, momentum_vecs, xy_offsets = travel_time[mask], momentum_vecs[mask], xy_offsets[mask]
 
     radius_sq_travelled = np.sum(
-        (momentum_vecs[:, :2] * travel_time[:, np.newaxis] + np.repeat(a[:, 0, :2], a.shape[1] - 1, axis=0)) ** 2,
+        (momentum_vecs[:, :2] * travel_time[:, np.newaxis] + xy_offsets) ** 2,
         axis=1,
     )
 
-    return np.sum(radius_sq_travelled <= E.d2radsq)
+    logger.debug(f"Returning {(ret_val := np.sum(radius_sq_travelled <= E.d2radsq))} intersections for {z=}")
+    return ret_val
 
 
 def maximize(fun, bracket, *args) -> float:
@@ -64,12 +66,14 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     else:
         logger.info("Loading cache from file")
         cache = Cache(args.cache_file)
+    logger.debug("Calculating not angled intersections")
     optimal_not_angled_z = maximize(
         calculate_num_intersects,
         (1, cache.average_decay_length, 2 * cache.average_decay_length),
         cache.not_angled_sample,
     )
     cache.not_angled_ideal_z = optimal_not_angled_z
+    logger.debug("Calculating angled intersections")
     optimal_angled_z = maximize(
         calculate_num_intersects,
         (1, cache.average_decay_length, 2 * cache.average_decay_length),
