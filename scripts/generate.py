@@ -12,7 +12,6 @@ from common import load_seedsequence, Cache, EnvDefault
 
 from typing import Union
 
-
 global logger
 logger = logging.getLogger(__name__)
 
@@ -35,6 +34,7 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     logger.info("Finished generating samples")
     logger.info("Calculating intersections and optimizing z")
     _, cache = intersection.main(Namespace(cache=cache, no_write=True))
+    cache.dump_readable_summary(args.summary)
     if args.no_write:
         return 0, cache
     else:
@@ -56,6 +56,15 @@ if __name__ == "__main__":
         envvar="VALUECACHE",
         default=r"./data/value_cache.json",
         help="File path of the value cache.",
+    )
+    group.add_argument(
+        "-s",
+        "--summary",
+        action=EnvDefault,
+        type=str,
+        envvar="SUMMARYFILE",
+        default=r"./data/summary.txt",
+        help="File path for the human readable data summary"
     )
     group.add_argument(
         "--cache",

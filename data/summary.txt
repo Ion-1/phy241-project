@@ -1,0 +1,3 @@
+Average Kaon decay length: 562.3105051894051 + 10.050571727525494 - 9.84152585021559 meters
+Non-divergent ideal z: 442.5798344667072 meters
+Divergent ideal z: 442.5798344667072 meters

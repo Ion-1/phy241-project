@@ -107,6 +107,17 @@ class Cache:
         with open(filepath, "w") as f:
             json.dump(self.data, f, indent=2)
 
+    def dump_readable_summary(self, filepath):
+        if os.path.exists(filepath):
+            logger.warning(f"Overwriting {filepath}")
+        try:
+            with open(filepath, "w") as f:
+                f.write(f"Average Kaon decay length: {self.average_decay_length} + {self.dlength_uncertainty[1]} - {self.dlength_uncertainty[0]} meters\n")
+                f.write(f"Non-divergent ideal z: {self.not_angled_ideal_z} meters\n")
+                f.write(f"Divergent ideal z: {self.angled_ideal_z} meters\n")
+        except OSError as e:
+            logger.error(f"Failed writing summary file: {e}")
+
     # I wish PEP 638 is a thing. So much boilerplate.
     @property
     def average_decay_length(self) -> float:
