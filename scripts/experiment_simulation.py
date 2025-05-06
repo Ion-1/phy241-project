@@ -5,7 +5,7 @@ import numpy as np
 import scipy.stats as st
 
 from numpy.random import Generator
-from common import EnvDefault, Cache, CONSTANTS as C, MAGIC as M, load_seedsequence
+from common import EnvDefault, Cache, CONSTANTS as C, MAGIC as M, load_seedsequence, EXPERIMENTAL_CONSTANTS as E
 
 from typing import Union
 from numpy.typing import NDArray
@@ -59,7 +59,7 @@ def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> ND
     return np.stack((vertex_positions, boosted_pos_p_4m[:, 1:], boosted_neu_p_4m[:, 1:]), axis=1)
 
 
-def rotate_sample(sample: NDArray, n: int, rng: Generator) -> NDArray:
+def rotate_sample(sample: NDArray, n: int, rng: Generator, angle_std: float) -> NDArray:
     """
     Takes a (n, 3, 3) NDArray sample of Kaon decay, and rotates the decay vertex and momentum
     vectors according to a Gaussian for the polar angle and a uniform distribution for the azimuthal angle.
@@ -67,7 +67,7 @@ def rotate_sample(sample: NDArray, n: int, rng: Generator) -> NDArray:
     """
     result=np.empty_like(sample)
     for i in range(n):
-        azimuthal = rng.normal(loc=0, scale=0.001, size=None)
+        azimuthal = rng.normal(loc=0, scale=angle_std, size=None)
         polar = rng.uniform(low=0, high=2 * np.pi, size=None)
 
         rotation = R(polar, "z") @ R(azimuthal, "y")
@@ -115,7 +115,7 @@ def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     sample = generate_sample_kaon_decay(cache.average_decay_length, M.sample_size, rng)
     logger.info("Finished generating straight-beam sample")
     cache.not_angled_sample = sample
-    angled_sample = rotate_sample(sample, M.sample_size, rng)
+    angled_sample = rotate_sample(sample, M.sample_size, rng, E.ANGULAR_DIVERGENCE_STD)
     logger.info("Finished rotating straight-beam sample")
     cache.angled_sample = angled_sample
     if args.no_write:
