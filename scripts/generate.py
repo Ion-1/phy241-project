@@ -12,7 +12,6 @@ from common import load_seedsequence, Cache, EnvDefault
 
 from typing import Union
 
-global logger
 logger = logging.getLogger(__name__)
 
 

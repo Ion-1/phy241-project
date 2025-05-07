@@ -10,7 +10,6 @@ from common import Cache, EnvDefault, CONSTANTS as C, EXPERIMENTAL_CONSTANTS as 
 from typing import Union
 
 
-global logger
 logger = logging.getLogger(__name__)
 
 

@@ -12,7 +12,6 @@ from typing import Union
 from numpy.typing import NDArray
 
 
-global logger
 logger = logging.getLogger(__name__)
 
 

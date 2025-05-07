@@ -19,7 +19,6 @@ from typing_extensions import Self
 from numpy.typing import NDArray
 
 
-global logger
 logger = logging.getLogger(__name__)
 
 
@@ -46,6 +45,7 @@ class CONSTANTS:
     t_k = KAON_MEANLIFE
     e = EV_TO_JOULES  # elementary charge
     MeV2mps = 10**6 * EV_TO_JOULES / SPEED_OF_LIGHT
+    MeVperCsq2kg = 10**6 * EV_TO_JOULES / SPEED_OF_LIGHT**2
 
 
 @dataclass(frozen=True)

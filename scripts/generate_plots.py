@@ -4,10 +4,13 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
+from vispy.scene.visuals import Arrow
+
 from numpy.typing import NDArray
 
 from find_dec_length import nll, distribution
-from common import Cache, MAGIC as M, CONSTANTS as C
+from common import Cache, MAGIC as M, CONSTANTS as C, EXPERIMENTAL_CONSTANTS as E
+
 
 global logger
 logger = logging.getLogger(__name__)
@@ -69,17 +72,22 @@ def plot3d(a: NDArray, name: str):
     ax1.quiver(empty := np.zeros(a.shape[0]), empty, empty, a[:,0,2], a[:,0,0], a[:,0,1])
     ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,1,2], a[:,1,0], a[:,1,1], label="π⁺ velocities")
     ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,2,2], a[:,2,0], a[:,2,1], label="π⁰ velocities")
+    y = np.outer(r, np.sin(phi))
+    z = np.full(x.shape, detector_z)
+    ax2.plot_surface(x, y, z, label="Detector", shade=False, antialiased=False, color='orange')
+    ax2.set_zlim(0, detector_z)
     ax1.set_title("Kaon decay vertices in $m$")
     ax2.set_title("Pion velocities in $ms^{-1}$")
     ax2.legend()
     fig.savefig(f"./graphs/task3_sample_{name.replace(' ', '_')}.png")
+    ax2.view_init(210, 0, 90)
 
 
 def plot_samples(cache: Cache):
     logger.info("Plotting not-divergent beam")
-    plot3d(cache.not_angled_sample, "Not divergent beam")
+    plot3d(cache.not_angled_sample, "Not divergent beam", cache.not_angled_ideal_z)
     logger.info("Plotting divergent beam")
-    plot3d(cache.angled_sample, "Divergent sample")
+    plot3d(cache.angled_sample, "Divergent sample", cache.angled_ideal_z)
 
 def main(*args: str) -> int:
     if not os.path.exists("./graphs/cat.png"):
