@@ -131,7 +131,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--seed-file",
-        help="File at which seed should be stored. Check `load_seedsequence` in `common.py` for more.",
+        help="File at which seed should be stored. Check `load_seedsequence` in `common.py` for more. *NOT* mutually exclusive with `--seed`.",
         default=None,
     )
     parser.add_argument(

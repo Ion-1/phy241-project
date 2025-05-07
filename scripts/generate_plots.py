@@ -4,21 +4,30 @@ import logging
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
+from scipy.spatial.distance import num_obs_y
 
-from vispy import app, scene
-from vispy.visuals import MeshVisual
-from vispy.scene.visuals import Arrow
+from vispy import app, gloo, scene
+from vispy.scene import TurntableCamera
+from vispy.scene.visuals import Arrow, Mesh
 
 from numpy.typing import NDArray
 
 from find_dec_length import nll, distribution
-from common import Cache, MAGIC as M, CONSTANTS as C, EXPERIMENTAL_CONSTANTS as E
+from common import Cache, MAGIC as M, CONSTANTS as C, EXPERIMENTAL_CONSTANTS as E, EnvDefault
 
 
 logger = logging.getLogger(__name__)
 
 
-def plot_nll(cache: Cache):
+def plot_nll(cache: Cache, interactive: bool):
+    fig = _plot_nll(cache)
+    if interactive:
+        fig.show()
+    else:
+        fig.savefig("./graphs/task2_nll.png")
+
+
+def _plot_nll(cache: Cache):
     logger.info("Plotting NLL")
     data = np.loadtxt("./data/dec_lengths.txt")
 
@@ -59,7 +68,7 @@ def plot_nll(cache: Cache):
     ax2.grid(True, linestyle="--", alpha=0.5)
     ax2.legend()
 
-    fig.savefig("./graphs/task2_nll.png")
+    return fig
 
 
 def plot3d(a: NDArray, name: str, detector_z: float):
@@ -117,6 +126,86 @@ def plot_samples(cache: Cache):
     plot3d(cache.angled_sample, "Divergent sample", cache.angled_ideal_z)
 
 
+def plot_samples_vispy(cache: Cache, interactive: bool = False):
+    if interactive:
+        create_canvas(cache.not_angled_sample, cache.not_angled_ideal_z)
+        create_canvas(cache.angled_sample, cache.angled_ideal_z)
+        app.run()
+
+
+def extend_vectors(z: float, a: NDArray) -> tuple[NDArray, NDArray]:
+    """
+    Extends the vectors in a sample to the detector.
+    """
+    z_travel = z - a[:, 0, 2]
+
+    # Filter out kaons that decay on/behind the detector
+    mask = z_travel > 0
+    z_travel, a = z_travel[mask], a[mask]
+
+    # We flatten our momentum sample into one big array, and repeat z_travel for every mom. vec.
+    z_travel = np.repeat(z_travel, a.shape[1] - 1)
+    momentum_vecs = a[:, 1:, :].reshape(-1, 3)
+    decays = np.repeat(a[:, 0], a.shape[1] - 1, axis=0)
+
+    with np.errstate(divide="ignore"):
+        # We ignore division by 0, as that just means travel perpendicular to our detector, and
+        # float('inf') is not going to be intersecting. (But imagine the probability of a div by 0)
+        travel_time = z_travel / momentum_vecs[:, 2]
+
+    # Filter out the ones going backwards in time
+    mask = travel_time > 0
+    travel_time, momentum_vecs, xy_offsets = travel_time[mask], momentum_vecs[mask], decays[mask]
+
+    return decays, momentum_vecs * travel_time[:, np.newaxis]
+
+
+def create_canvas(sample: NDArray, detector_z: float):
+    canvas = scene.SceneCanvas(keys="interactive", show=True, bgcolor="white")
+    view = canvas.central_widget.add_view()
+    view.camera = scene.TurntableCamera(fov=45, azimuth=30, elevation=30, distance=10)
+
+    step = sample.shape[0] // M.plot_size
+    sample[:, 1, :] = sample[:, 1, :] / (C.m_pp * C.MeVperCsq2kg)
+    sample[:, 2, :] = sample[:, 2, :] / (C.m_np * C.MeVperCsq2kg)
+    pos, d = extend_vectors(detector_z, sample[::step])
+
+    arrows = np.hstack([pos, (end := pos + d)])
+    logger.debug(f"{arrows.shape=}")
+    vpos = np.empty((2*pos.shape[0], 3), dtype=float)
+    vpos[0::2] = pos
+    vpos[1::2] = end
+
+    arrow = scene.visuals.Arrow(
+        pos=vpos, arrows=arrows, connect="segments", arrow_type="angle_30", arrow_size=50, color="red", arrow_color="red", parent=view.scene
+    )
+
+    num_segments = 100
+    radius = E.DETECTOR2_RADIUS
+    z0 = detector_z
+    # a) circle in XY at z=z0
+    theta = np.linspace(0, 2 * np.pi, num_segments, endpoint=False)
+    x, y = radius * np.cos(theta), radius * np.sin(theta)
+    z = np.full_like(x, z0)
+
+    # b) vertices: first is center, then the rim
+    verts = np.zeros((num_segments + 1, 3), dtype=float)
+    verts[0] = (0.0, 0.0, z0)
+    verts[1:] = np.column_stack((x, y, z))
+
+    # c) faces: triangles [0, i, i+1]
+    faces = []
+    for i in range(1, num_segments):
+        faces.append([0, i, i + 1])
+    faces.append([0, num_segments, 1])
+    faces = np.array(faces, dtype=np.uint32)
+
+    # d) make the mesh
+    disk = scene.visuals.Mesh(vertices=verts, faces=faces, color=(0.2, 0.2, 1.0, 0.3), parent=view.scene)
+
+    axes = scene.visuals.XYZAxis(parent=view.scene)
+
+
 def main(args: argparse.Namespace) -> int:
     if not os.path.exists("./graphs/cat.png"):
         logger.fatal("No cat (┬┬﹏┬┬)")
@@ -131,8 +220,8 @@ def main(args: argparse.Namespace) -> int:
     else:
         logger.info("Loading cache from file")
         cache = Cache(args.cache_file)
-    plot_nll(cache)
-    plot_samples(cache)
+    plot_nll(cache, args.interactive)
+    plot_samples_vispy(cache, args.interactive)
     return 0
 
 
@@ -168,5 +257,6 @@ if __name__ == "__main__":
         datefmt=M.logger_datefmt,
     )
     logger.info(f"Parsed arguments: {args}")
+    logging.getLogger("matplotlib").setLevel(logging.WARNING)
 
     sys.exit(main(args))

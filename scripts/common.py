@@ -25,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class MAGIC:
     sample_size = 100000
+    plot_size = 100
     logger_fmt = "[%(asctime)s] [%(name)s/%(levelname)s]: %(message)s"
     logger_datefmt = "%Y-%m-%dT%H:%M:%S%z"
 
