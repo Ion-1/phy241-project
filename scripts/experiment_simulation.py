@@ -67,10 +67,10 @@ def rotate_sample(sample: NDArray, angle_std: float, rng: Generator) -> NDArray:
     """
     n = sample.shape[0]
 
-    azimuthal = rng.normal(loc=0, scale=angle_std, size=n)
-    polar = rng.uniform(low=0, high=2 * np.pi, size=n)
+    polar = rng.normal(loc=0, scale=angle_std, size=n)
+    azimuthal = rng.uniform(low=0, high=2 * np.pi, size=n)
 
-    rotation = R.from_euler("zy", np.vstack((polar, azimuthal)).T)
+    rotation = R.from_euler("zy", np.vstack((azimuthal, polar)).T)
 
     return np.einsum('ipc,icq->ipq', sample, rotation.as_matrix())
 
