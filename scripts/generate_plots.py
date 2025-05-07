@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -19,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 def plot_nll(cache: Cache):
     logger.info("Plotting NLL")
-    data=np.loadtxt("./data/dec_lengths.txt")
+    data = np.loadtxt("./data/dec_lengths.txt")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, width_ratios=(1,1), figsize=(12.8, 7.2), dpi=150, layout="tight")
+    fig, (ax1, ax2) = plt.subplots(1, 2, width_ratios=(1, 1), figsize=(12.8, 7.2), dpi=150, layout="tight")
 
     xlim = (520, 600)
-    values=np.linspace(*xlim,100)
-    nlls=np.vectorize(nll, excluded={"data"})(mean_k=values,data=data)
+    values = np.linspace(*xlim, 100)
+    nlls = np.vectorize(nll, excluded={"data"})(mean_k=values, data=data)
     ax1.plot(values, nlls, "b-")
     ax1.set_xlim(*xlim)
     ax1.set_xlabel("Decay Length [m]")
@@ -34,21 +35,15 @@ def plot_nll(cache: Cache):
     # ax1.get_yaxis().get_major_formatter().set_useOffset(False)
     ax1.grid(True, linestyle="--", alpha=0.5)
     nll_val = nll(cache.adl, data)
-    ax1.annotate(
-        f"({cache.adl:.2f}, {nll_val:.2f})", (cache.adl, nll_val), (-100, 70), textcoords="offset pixels"
-    )
+    ax1.annotate(f"({cache.adl:.2f}, {nll_val:.2f})", (cache.adl, nll_val), (-100, 70), textcoords="offset pixels")
     ax1.plot(cache.adl, nll_val, "ko")
     lower = cache.adl - cache.dlength_uncertainty[0]
     nll_val = nll(lower, data)
-    ax1.annotate(
-        f"({lower:.2f}, {nll_val:.2f})", (lower, nll_val), (-250, 0), textcoords="offset pixels"
-    )
+    ax1.annotate(f"({lower:.2f}, {nll_val:.2f})", (lower, nll_val), (-250, 0), textcoords="offset pixels")
     ax1.plot(lower, nll_val, "ko")
     higher = cache.adl + cache.dlength_uncertainty[1]
     nll_val = nll(higher, data)
-    ax1.annotate(
-        f"({higher:.2f}, {nll_val:.2f})", (higher, nll_val), (30, 0), textcoords="offset pixels"
-    )
+    ax1.annotate(f"({higher:.2f}, {nll_val:.2f})", (higher, nll_val), (30, 0), textcoords="offset pixels")
     ax1.plot(higher, nll_val, "ko")
 
     ax2.hist(data, bins=100, density=True)
@@ -58,7 +53,9 @@ def plot_nll(cache: Cache):
     ax2.set_ylabel("Count")
     ax2.set_title("Histogram of Decay Lengths")
     x_vals = np.linspace(*ax2.get_xlim(), 1000)
-    ax2.plot(x_vals, distribution(cache.adl, x_vals), label=f"The distribution with an a.d.l. of {cache.adl:.2f} meters")
+    ax2.plot(
+        x_vals, distribution(cache.adl, x_vals), label=f"The distribution with an a.d.l. of {cache.adl:.2f} meters"
+    )
     ax2.grid(True, linestyle="--", alpha=0.5)
     ax2.legend()
 
@@ -66,23 +63,43 @@ def plot_nll(cache: Cache):
 
 
 def plot3d(a: NDArray, name: str, detector_z: float):
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.4, 7.2), dpi=150, subplot_kw={"projection":"3d"})
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.4, 7.2), dpi=150, subplot_kw={"projection": "3d"})
     fig.suptitle(name)
-    a = a[::M.sample_size//100] # only take 100 element subset of sample
-    a[:,1,:] = a[:,1,:] / (C.m_pp * C.MeVperCsq2kg)
-    a[:,2,:] = a[:,2,:] / (C.m_np * C.MeVperCsq2kg)
+    a = a[:: M.sample_size // 100]  # only take 100 element subset of sample
+    a[:, 1, :] = a[:, 1, :] / (C.m_pp * C.MeVperCsq2kg)
+    a[:, 2, :] = a[:, 2, :] / (C.m_np * C.MeVperCsq2kg)
 
-    ax1.quiver(empty := np.zeros(a.shape[0]), empty, empty, a[:,0,0], a[:,0,1], a[:,0,2])
+    ax1.quiver(empty := np.zeros(a.shape[0]), empty, empty, a[:, 0, 0], a[:, 0, 1], a[:, 0, 2])
 
     r = np.linspace(0, E.DETECTOR2_RADIUS, 50)
-    phi = np.linspace(0, 2*np.pi, 50)
+    phi = np.linspace(0, 2 * np.pi, 50)
     x = np.outer(r, np.cos(phi))
     y = np.outer(r, np.sin(phi))
     z = np.full(x.shape, detector_z)
-    ax2.plot_surface(x, y, z, label="Detector", shade=False, antialiased=False, color='orange')
+    ax2.plot_surface(x, y, z, label="Detector", shade=False, antialiased=False, color="orange")
 
-    ax2.quiver(a[:,0,0], a[:,0,1], a[:,0,2], a[:,1,0], a[:,1,1], a[:,1,2], label="π⁺ velocities", normalize=True, length=1)
-    ax2.quiver(a[:,0,0], a[:,0,1], a[:,0,2], a[:,2,0], a[:,2,1], a[:,2,2], label="π⁰ velocities", normalize=True, length=1)
+    ax2.quiver(
+        a[:, 0, 0],
+        a[:, 0, 1],
+        a[:, 0, 2],
+        a[:, 1, 0],
+        a[:, 1, 1],
+        a[:, 1, 2],
+        label="π⁺ velocities",
+        normalize=True,
+        length=1,
+    )
+    ax2.quiver(
+        a[:, 0, 0],
+        a[:, 0, 1],
+        a[:, 0, 2],
+        a[:, 2, 0],
+        a[:, 2, 1],
+        a[:, 2, 2],
+        label="π⁰ velocities",
+        normalize=True,
+        length=1,
+    )
 
     ax2.set_zlim(0, detector_z)
     ax1.set_title("Kaon decay vertices in $m$")
@@ -99,10 +116,21 @@ def plot_samples(cache: Cache):
     logger.info("Plotting divergent beam")
     plot3d(cache.angled_sample, "Divergent sample", cache.angled_ideal_z)
 
-def main(*args: str) -> int:
+
+def main(args: argparse.Namespace) -> int:
     if not os.path.exists("./graphs/cat.png"):
+        logger.fatal("No cat (┬┬﹏┬┬)")
         return 1
-    cache = Cache(r"./data/value_cache.json")
+    if hasattr(args, "cache") and args.cache is not None:
+        if isinstance(args.cache, Cache):
+            logger.debug("Cache provided as-is in namespace")
+            cache = args.cache
+        else:
+            logger.info("Loading cache from b64 string")
+            cache = Cache.from_b64(args.cache)
+    else:
+        logger.info("Loading cache from file")
+        cache = Cache(args.cache_file)
     plot_nll(cache)
     plot_samples(cache)
     return 0
@@ -110,12 +138,35 @@ def main(*args: str) -> int:
 
 if __name__ == "__main__":
 
-    fmt = "[%(levelname)s|%(name)s] %(asctime)s: %(message)s"
-    logging.basicConfig(
-        stream=sys.stdout,
-        level=logging.INFO,
-        format=fmt,
-        datefmt="%Y-%m-%dT%H:%M:%S%z",
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-q", "--quiet", action="count", help="Decrease output verbosity.", default=0)
+    parser.add_argument("-v", "--verbose", action="count", help="Increase output verbosity.", default=0)
+    parser.add_argument("-i", "--interactive", action="store_true", help="Run the plots interactively.")
+    group = parser.add_mutually_exclusive_group(required=False)
+    group.add_argument(
+        "-c",
+        "--cache-file",
+        action=EnvDefault,
+        type=str,
+        envvar="VALUECACHE",
+        default=r"./data/value_cache.json",
+        help="File path of the value cache.",
+    )
+    group.add_argument(
+        "--cache",
+        help="A base64 representation of a UTF-8 JSON string containing the value cache data. Implies `--no-write`.",
     )
 
-    sys.exit(main(*sys.argv))
+    args = parser.parse_args()
+
+    logging.basicConfig(
+        stream=sys.stdout,
+        level={0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG, -1: logging.ERROR, -2: logging.CRITICAL}.get(
+            min(max(args.verbose - args.quiet, -2), 2), logging.WARNING
+        ),
+        format=M.logger_fmt,
+        datefmt=M.logger_datefmt,
+    )
+    logger.info(f"Parsed arguments: {args}")
+
+    sys.exit(main(args))

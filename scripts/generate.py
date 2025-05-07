@@ -18,10 +18,13 @@ logger = logging.getLogger(__name__)
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
         if isinstance(args.cache, Cache):
+            logger.debug("Cache provided as-is in namespace")
             cache = args.cache
         else:
+            logger.info("Loading cache from b64 string")
             cache = Cache.from_b64(args.cache)
     else:
+        logger.info("Loading cache from file")
         cache = Cache(args.cache_file)
     ssequence = load_seedsequence(args.seed, args.seed_file, args.no_write_out_seed)[0]
     logger.info("Calculating average decay length...")
@@ -57,17 +60,17 @@ if __name__ == "__main__":
         help="File path of the value cache.",
     )
     group.add_argument(
+        "--cache",
+        help="A base64 representation of a UTF-8 JSON string containing the value cache data. Implies `--no-write`.",
+    )
+    parser.add_argument(
         "-s",
         "--summary",
         action=EnvDefault,
         type=str,
         envvar="SUMMARYFILE",
         default=r"./data/summary.txt",
-        help="File path for the human readable data summary"
-    )
-    group.add_argument(
-        "--cache",
-        help="A base64 representation of a UTF-8 JSON string containing the value cache data. Implies `--no-write`.",
+        help="File path for the human readable data summary",
     )
     parser.add_argument(
         "--no-write",
@@ -81,7 +84,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--seed-file",
-        help="File at which seed should be stored. Check `load_seedsequence` in `common.py` for more.",
+        help="File at which seed should be stored. Check `load_seedsequence` in `common.py` for more. *NOT* mutually exclusive with `--seed`.",
         default="./data/entropy",
     )
     parser.add_argument(
@@ -94,14 +97,13 @@ if __name__ == "__main__":
     if hasattr(args, "cache") and args.cache is not None:
         args.no_write = True
 
-    fmt = "[%(levelname)s|%(name)s] %(asctime)s: %(message)s"
     logging.basicConfig(
         stream=sys.stdout,
         level={0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG, -1: logging.ERROR, -2: logging.CRITICAL}.get(
             min(max(args.verbose - args.quiet, -2), 2), logging.WARNING
         ),
-        format=fmt,
-        datefmt="%Y-%m-%dT%H:%M:%S%z",
+        format=M.logger_fmt,
+        datefmt=M.logger_datefmt,
     )
     logger.info(f"Parsed arguments: {args}")
 

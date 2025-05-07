@@ -144,14 +144,13 @@ if __name__ == "__main__":
     if hasattr(args, "cache") and args.cache is not None:
         args.no_write = True
 
-    fmt = "[%(levelname)s|%(name)s] %(asctime)s: %(message)s"
     logging.basicConfig(
         stream=sys.stdout,
         level={0: logging.WARNING, 1: logging.INFO, 2: logging.DEBUG, -1: logging.ERROR, -2: logging.CRITICAL}.get(
             min(max(args.verbose - args.quiet, -2), 2), logging.WARNING
         ),
-        format=fmt,
-        datefmt="%Y-%m-%dT%H:%M:%S%z",
+        format=M.logger_fmt,
+        datefmt=M.logger_datefmt,
     )
     logger.info(f"Parsed arguments: {args}")
 
