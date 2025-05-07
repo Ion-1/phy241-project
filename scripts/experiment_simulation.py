@@ -5,6 +5,7 @@ import numpy as np
 import scipy.stats as st
 
 from numpy.random import Generator
+from scipy.spatial.transform import Rotation as R
 from common import EnvDefault, Cache, CONSTANTS as C, MAGIC as M, load_seedsequence, EXPERIMENTAL_CONSTANTS as E
 
 from typing import Union
@@ -65,40 +66,15 @@ def rotate_sample(sample: NDArray, angle_std: float, rng: Generator) -> NDArray:
     vectors according to a Gaussian for the polar angle and a uniform distribution for the azimuthal angle.
     Due to rotational symmetry, we can simply reuse our non-angled sample.
     """
-    result=np.empty_like(sample)
-    for i in range(sample.shape[0]):
-        azimuthal = rng.normal(loc=0, scale=angle_std, size=None)
-        polar = rng.uniform(low=0, high=2 * np.pi, size=None)
+    n = sample.shape[0]
 
-        rotation = R(polar, "z") @ R(azimuthal, "y")
-        for j in range(3):
-            result[i, j] = sample[i, j] @ rotation.T
+    azimuthal = rng.normal(loc=0, scale=angle_std, size=n)
+    polar = rng.uniform(low=0, high=2 * np.pi, size=n)
 
-    return result
+    rotation = R.from_euler("zy", np.vstack((polar, azimuthal)).T)
 
-def R(angle, axis):
-    c = np.cos(angle)
-    s = np.sin(angle)
+    return np.einsum('ipc,icq->ipq', sample, rotation.as_matrix())
 
-    if axis == "x":
-        return np.array([
-            [1,  0,  0],
-            [0,  c, -s],
-            [0,  s,  c]
-        ])
-    elif axis == "y":
-        return np.array([
-            [ c, 0, s],
-            [ 0, 1, 0],
-            [-s, 0, c]
-        ])
-    elif axis == "z":
-        return np.array([
-            [c, -s, 0],
-            [s,  c, 0],
-            [0,  0, 1]
-        ])
-    return None
 
 def main(args: argparse.Namespace) -> Union[int, tuple[int, Cache]]:
     if hasattr(args, "cache") and args.cache is not None:
