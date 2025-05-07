@@ -4,6 +4,8 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
+from vispy import app, scene
+from vispy.visuals import MeshVisual
 from vispy.scene.visuals import Arrow
 
 from numpy.typing import NDArray
@@ -12,7 +14,6 @@ from find_dec_length import nll, distribution
 from common import Cache, MAGIC as M, CONSTANTS as C, EXPERIMENTAL_CONSTANTS as E
 
 
-global logger
 logger = logging.getLogger(__name__)
 
 
@@ -64,23 +65,32 @@ def plot_nll(cache: Cache):
     fig.savefig("./graphs/task2_nll.png")
 
 
-def plot3d(a: NDArray, name: str):
+def plot3d(a: NDArray, name: str, detector_z: float):
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14.4, 7.2), dpi=150, subplot_kw={"projection":"3d"})
+    fig.suptitle(name)
     a = a[::M.sample_size//100] # only take 100 element subset of sample
-    a[:,1,:] = a[:,1,:] / C.m_pp
-    a[:,2,:] = a[:,2,:] / C.m_np
-    ax1.quiver(empty := np.zeros(a.shape[0]), empty, empty, a[:,0,2], a[:,0,0], a[:,0,1])
-    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,1,2], a[:,1,0], a[:,1,1], label="π⁺ velocities")
-    ax2.quiver(a[:,0,2], a[:,0,0], a[:,0,1], a[:,2,2], a[:,2,0], a[:,2,1], label="π⁰ velocities")
+    a[:,1,:] = a[:,1,:] / (C.m_pp * C.MeVperCsq2kg)
+    a[:,2,:] = a[:,2,:] / (C.m_np * C.MeVperCsq2kg)
+
+    ax1.quiver(empty := np.zeros(a.shape[0]), empty, empty, a[:,0,0], a[:,0,1], a[:,0,2])
+
+    r = np.linspace(0, E.DETECTOR2_RADIUS, 50)
+    phi = np.linspace(0, 2*np.pi, 50)
+    x = np.outer(r, np.cos(phi))
     y = np.outer(r, np.sin(phi))
     z = np.full(x.shape, detector_z)
     ax2.plot_surface(x, y, z, label="Detector", shade=False, antialiased=False, color='orange')
+
+    ax2.quiver(a[:,0,0], a[:,0,1], a[:,0,2], a[:,1,0], a[:,1,1], a[:,1,2], label="π⁺ velocities", normalize=True, length=1)
+    ax2.quiver(a[:,0,0], a[:,0,1], a[:,0,2], a[:,2,0], a[:,2,1], a[:,2,2], label="π⁰ velocities", normalize=True, length=1)
+
     ax2.set_zlim(0, detector_z)
     ax1.set_title("Kaon decay vertices in $m$")
     ax2.set_title("Pion velocities in $ms^{-1}$")
     ax2.legend()
-    fig.savefig(f"./graphs/task3_sample_{name.replace(' ', '_')}.png")
+    ax1.view_init(210, 0, 90)
     ax2.view_init(210, 0, 90)
+    fig.savefig(f"./graphs/task3_sample_{name.replace(' ', '_').lower()}.png")
 
 
 def plot_samples(cache: Cache):
