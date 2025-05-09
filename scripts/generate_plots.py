@@ -52,11 +52,11 @@ def _plot_nll(cache: Cache):
     ax1.plot(cache.adl, nll_val, "ko")
     lower = cache.adl - cache.dlength_uncertainty[0]
     nll_val = nll(lower, data)
-    ax1.annotate(f"({lower:.2f}, {nll_val:.2f})", (lower, nll_val), (-300, -50), textcoords="offset pixels")
+    ax1.annotate(f"({lower:.2f}, {nll_val:.2f})", (lower, nll_val), (-350, -30), textcoords="offset pixels")
     ax1.plot(lower, nll_val, "ko")
     higher = cache.adl + cache.dlength_uncertainty[1]
     nll_val = nll(higher, data)
-    ax1.annotate(f"({higher:.2f}, {nll_val:.2f})", (higher, nll_val), (50, -50), textcoords="offset pixels")
+    ax1.annotate(f"({higher:.2f}, {nll_val:.2f})", (higher, nll_val), (100, -30), textcoords="offset pixels")
     ax1.plot(higher, nll_val, "ko")
 
     ax2.hist(data, bins=100, density=True)
