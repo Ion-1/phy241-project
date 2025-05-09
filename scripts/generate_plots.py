@@ -4,11 +4,12 @@ import logging
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.spatial.distance import num_obs_y
+import vispy.io as io
 
 from vispy import app, gloo, scene
 from vispy.scene import TurntableCamera
 from vispy.scene.visuals import Arrow, Mesh
+from scipy.spatial.distance import num_obs_y
 
 from numpy.typing import NDArray
 
@@ -20,18 +21,21 @@ logger = logging.getLogger(__name__)
 
 
 def plot_nll(cache: Cache, interactive: bool):
-    fig = _plot_nll(cache)
+    fig1, fig2 = _plot_nll(cache)
     if interactive:
-        fig.show()
+        fig1.show()
+        fig2.show()
     else:
-        fig.savefig("./graphs/task2_nll.png")
+        fig1.savefig("./graphs/task2_nll.png")
+        fig2.savefig("./graphs/task2_hist.png")
 
 
 def _plot_nll(cache: Cache):
     logger.info("Plotting NLL")
     data = np.loadtxt("./data/dec_lengths.txt")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, width_ratios=(1, 1), figsize=(12.8, 7.2), dpi=150, layout="tight")
+    fig1, ax1 = plt.subplots(figsize=(8, 4), dpi=200, layout="tight")
+    fig2, ax2 = plt.subplots(figsize=(8, 4), dpi=200, layout="tight")
 
     xlim = (520, 600)
     values = np.linspace(*xlim, 100)
@@ -44,15 +48,15 @@ def _plot_nll(cache: Cache):
     # ax1.get_yaxis().get_major_formatter().set_useOffset(False)
     ax1.grid(True, linestyle="--", alpha=0.5)
     nll_val = nll(cache.adl, data)
-    ax1.annotate(f"({cache.adl:.2f}, {nll_val:.2f})", (cache.adl, nll_val), (-100, 70), textcoords="offset pixels")
+    ax1.annotate(f"({cache.adl:.2f}, {nll_val:.2f})", (cache.adl, nll_val), (-150, 50), textcoords="offset pixels")
     ax1.plot(cache.adl, nll_val, "ko")
     lower = cache.adl - cache.dlength_uncertainty[0]
     nll_val = nll(lower, data)
-    ax1.annotate(f"({lower:.2f}, {nll_val:.2f})", (lower, nll_val), (-250, 0), textcoords="offset pixels")
+    ax1.annotate(f"({lower:.2f}, {nll_val:.2f})", (lower, nll_val), (-300, -50), textcoords="offset pixels")
     ax1.plot(lower, nll_val, "ko")
     higher = cache.adl + cache.dlength_uncertainty[1]
     nll_val = nll(higher, data)
-    ax1.annotate(f"({higher:.2f}, {nll_val:.2f})", (higher, nll_val), (30, 0), textcoords="offset pixels")
+    ax1.annotate(f"({higher:.2f}, {nll_val:.2f})", (higher, nll_val), (50, -50), textcoords="offset pixels")
     ax1.plot(higher, nll_val, "ko")
 
     ax2.hist(data, bins=100, density=True)
@@ -68,7 +72,7 @@ def _plot_nll(cache: Cache):
     ax2.grid(True, linestyle="--", alpha=0.5)
     ax2.legend()
 
-    return fig
+    return fig1, fig2
 
 
 def plot3d(a: NDArray, name: str, detector_z: float):
@@ -127,10 +131,18 @@ def plot_samples(cache: Cache):
 
 
 def plot_samples_vispy(cache: Cache, interactive: bool = False):
+    logger.info("Creating vispy canvas for not divergent beam")
+    a = create_canvas(cache.not_angled_sample, cache.not_angled_ideal_z)
+    logger.info("Creating vispy canvas for divergent beam")
+    b = create_canvas(cache.angled_sample, cache.angled_ideal_z)
     if interactive:
-        create_canvas(cache.not_angled_sample, cache.not_angled_ideal_z)
-        create_canvas(cache.angled_sample, cache.angled_ideal_z)
         app.run()
+    else:
+        io.write_png("./graphs/task3_sample_not_divergent.png", a.render())
+        io.write_png("./graphs/task3_sample_divergent.png", b.render())
+        logger.info("Plots saved to ./graphs")
+        app.quit()
+
 
 
 def extend_vectors(z: float, a: NDArray) -> tuple[NDArray, NDArray]:
@@ -205,6 +217,8 @@ def create_canvas(sample: NDArray, detector_z: float):
 
     axes = scene.visuals.XYZAxis(parent=view.scene)
 
+    return canvas
+
 
 def main(args: argparse.Namespace) -> int:
     if not os.path.exists("./graphs/cat.png"):
@@ -220,6 +234,7 @@ def main(args: argparse.Namespace) -> int:
     else:
         logger.info("Loading cache from file")
         cache = Cache(args.cache_file)
+    args.interactive = False
     plot_nll(cache, args.interactive)
     plot_samples_vispy(cache, args.interactive)
     return 0
@@ -230,7 +245,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-q", "--quiet", action="count", help="Decrease output verbosity.", default=0)
     parser.add_argument("-v", "--verbose", action="count", help="Increase output verbosity.", default=0)
-    parser.add_argument("-i", "--interactive", action="store_true", help="Run the plots interactively.")
     group = parser.add_mutually_exclusive_group(required=False)
     group.add_argument(
         "-c",
