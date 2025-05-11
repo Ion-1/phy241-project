@@ -32,8 +32,8 @@ def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> ND
     # decay length \lambda = c * \beta * \gamma * \tau
     # momentum in MeV/c is \beta * \gamma * mass (in MeV/c^2)
     βγ = avg_dlength / C.t_k / C.c
-    p_K = βγ * C.m_k
-    E_K = np.sqrt(C.m_k**2 + p_K**2)
+    # p_K = βγ * C.m_k
+    # E_K = np.sqrt(C.m_k**2 + p_K**2)
     # magnitude of pions' momentum stems from four-momentum conservation
     p_p = np.sqrt((C.m_k**2 - (C.m_pp + C.m_np) ** 2) * (C.m_k**2 - (C.m_pp - C.m_np) ** 2)) / 2 / C.m_k
 
@@ -52,7 +52,8 @@ def generate_sample_kaon_decay(avg_dlength: float, n: int, rng: Generator) -> ND
     E_neutral_pion = np.sqrt(C.m_np**2 + p_p**2)
     neu_pi_4_momenta = np.concatenate((np.full((n, 1), E_neutral_pion), -isotrope_momenta), axis=1)
 
-    γ = E_K / C.m_k
+    # γ = E_K / C.m_k
+    γ = np.sqrt(1 + βγ**2)
     lorentz_boost = np.array([[γ, 0, 0, βγ], [0, 1, 0, 0], [0, 0, 1, 0], [βγ, 0, 0, γ]])
     boosted_pos_p_4m = C.MeV2mps * pos_pi_4_momenta @ lorentz_boost.T  # If only I could use np.matvec
     boosted_neu_p_4m = C.MeV2mps * neu_pi_4_momenta @ lorentz_boost.T  # but alas, python 3.9

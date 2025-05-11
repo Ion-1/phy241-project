@@ -8,7 +8,7 @@ import experiment_simulation
 import intersection
 
 from argparse import Namespace
-from common import load_seedsequence, Cache, EnvDefault
+from common import load_seedsequence, Cache, EnvDefault, MAGIC as M
 
 from typing import Union
 
