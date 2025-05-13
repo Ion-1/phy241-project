@@ -1,5 +1,7 @@
 # PHY241 Project 3: Kaon Experiment
 
+[![SPEC 7 — Seeding pseudo-random number generation](https://img.shields.io/badge/SPEC-7-green?labelColor=%23004811&color=%235CA038)](https://scientific-python.org/specs/spec-0007/)
+
 #### Group members: [@Ion-1](https://github.com/Ion-1) [@Cookie265](https://github.com/Cookie265) [@Ar6cI](https://github.com/Ar6cI) [@AlessandroSchuetz](https://github.com/AlessandroSchuetz)
 
 This is our repository for the group project in module PHY241 at the University of Zürich.
