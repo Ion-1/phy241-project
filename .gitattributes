@@ -5,3 +5,4 @@
 *.md text eol=lf
 *.tex text eol=lf
 .git* text eol=lf
+data/* linguist-generated
